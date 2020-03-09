@@ -7,7 +7,7 @@ services:
     command: python3 user.py 
     restart: always
     ports:
-      - "80:80"
+      - "8080:80"
 
   rides:
     build: ./rides
@@ -15,4 +15,4 @@ services:
     command: python3 ride.py
     restart: always
     ports:
-      - "80:80"
+      - "8000:80"
