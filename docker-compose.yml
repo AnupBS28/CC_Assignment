@@ -1,0 +1,18 @@
+version : "3"
+
+services:
+  users:
+    build: ./users
+    image: users:latest
+    command: python3 user.py 
+    restart: always
+    ports:
+      - "8080:80"
+
+  rides:
+    build: ./rides
+    image: rides:latest
+    command: python3 ride.py
+    restart: always
+    ports:
+      - "8000:80"
