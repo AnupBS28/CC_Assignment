@@ -8,6 +8,8 @@ pword_pat = re.compile('^[a-fA-F0-9]{40}$')
 
 app = Flask(__name__)
 
+count=0
+
 @app.route("/")
 def hello():
     return "<h1>Hello Anup</h1>"
@@ -15,13 +17,15 @@ def hello():
 
 @app.route("/communicate",methods=['GET'])
 def callUser():
-	returnVal = requests.get(url='http://ec2-54-175-126-172.compute-1.amazonaws.com:8080/check')
+	returnVal = requests.get(url='http://ec2-54-175-126-172.compute-1.amazonaws.com:80/check')
 	print("From ride container after calling user container")
 	return "called user container"
 
 #3rd api
 @app.route('/api/v1/rides',methods=['POST'])
 def create_ride():
+    global count
+    count+=1
     print("Creating RIde . . .")
     try:
         data = request.get_json()
@@ -34,7 +38,7 @@ def create_ride():
 
     query = {}
     try:
-        uname_list = requests.get(url='http://ec2-54-175-126-172.compute-1.amazonaws.com:8080/api/v1/users',params=query)
+        uname_list = requests.get(url='http://ridesharelb-1246004696.us-east-1.elb.amazonaws.com:80/api/v1/users',params=query)
     except:
         return Response(status=400)
     present=0
@@ -47,7 +51,7 @@ def create_ride():
     if(present):
         send_data = {"insert":[created_by,timestamp,source,dest],"table":"rides","columns":["uname","timestamp","source","destination"],"isDelete":"False","isClear":"False"}
         try:
-            requests.post(url='http://ec2-54-175-126-172.compute-1.amazonaws.com:8000/api/v1/db/write', json=send_data)
+            requests.post(url='http://ec2-34-196-38-115.compute-1.amazonaws.com:80/api/v1/db/write', json=send_data)
             return Response(status=201)
         except:
             return Response(status=400)
@@ -60,6 +64,8 @@ def create_ride():
 #4th api
 @app.route('/api/v1/rides',methods=['GET'])
 def list_rides():
+    global count
+    count+=1
     try:
         source = request.args.get('source')
         destination = request.args.get('destination')
@@ -72,7 +78,7 @@ def list_rides():
     query_for_area = {"table":"Areas","columns":["area_id"], "where":"1"}
 
     try:
-        area_list = requests.post(url='http://ec2-54-175-126-172.compute-1.amazonaws.com:8000/api/v1/db/read',json = query_for_area)
+        area_list = requests.post(url='http://ec2-34-196-38-115.compute-1.amazonaws.com:80/api/v1/db/read',json = query_for_area)
     except:
         return Response(status=400)
     area_list = area_list.json()['area_id']
@@ -90,7 +96,7 @@ def list_rides():
         query = {"table":"rides","columns":["rideId","uname","timestamp"],"where":condition} 
 
         try:
-            ride_data = requests.post(url='http://ec2-54-175-126-172.compute-1.amazonaws.com:8000/api/v1/db/read', json=query)
+            ride_data = requests.post(url='http://ec2-34-196-38-115.compute-1.amazonaws.com:80/api/v1/db/read', json=query)
         except:
             return Response(status=400)
         print(ride_data)
@@ -128,11 +134,13 @@ def list_rides():
 #5th api
 @app.route('/api/v1/rides/<rideId>',methods=['GET'])
 def ride_details(rideId):
+    global count
+    count+=1
     print("rideId:",rideId)
 
     query = {"table":"Rides","columns":["rideId"],"where":"1"}
     try:
-        ride_ids = requests.post(url='http://ec2-54-175-126-172.compute-1.amazonaws.com:8000/api/v1/db/read', json=query)
+        ride_ids = requests.post(url='http://ec2-34-196-38-115.compute-1.amazonaws.com:80/api/v1/db/read', json=query)
     except:
         return Response(status=400)
 
@@ -153,7 +161,7 @@ def ride_details(rideId):
         ride_query = {"table":"rides","columns":["uname","timestamp","source","destination"],"where":wherecond} 
         
         try:
-            about_ride = requests.post(url='http://ec2-54-175-126-172.compute-1.amazonaws.com:8000/api/v1/db/read', json=ride_query)
+            about_ride = requests.post(url='http://ec2-34-196-38-115.compute-1.amazonaws.com:80/api/v1/db/read', json=ride_query)
         except:
             return Response(status=400)
 
@@ -170,7 +178,7 @@ def ride_details(rideId):
 
         print(users_query)
 
-        pool_users = requests.post(url='http://ec2-54-175-126-172.compute-1.amazonaws.com:8000/api/v1/db/read', json=users_query)
+        pool_users = requests.post(url='http://ec2-34-196-38-115.compute-1.amazonaws.com:80/api/v1/db/read', json=users_query)
         pool_users = pool_users.json()['uname']
         response = {"rideId":rideId, "created_by":created_user,"users":pool_users , "timestamp":created_timestamp, "source":source_id, "destination":dest_id}
         return jsonify(response),200
@@ -179,10 +187,12 @@ def ride_details(rideId):
 #6th api
 @app.route('/api/v1/rides/<rideId>',methods=['POST'])
 def pool_ride(rideId):
+    global count
+    count+=1
     uname = request.get_json()['username']
     query1 = {}
 
-    uname_list = requests.get(url='http://ec2-54-175-126-172.compute-1.amazonaws.com:8080/api/v1/users',params=query1)
+    uname_list = requests.get(url='http://ridesharelb-1246004696.us-east-1.elb.amazonaws.com:80/api/v1/users',params=query1)
     present=0
     
     uname_list=uname_list.json()    
@@ -194,7 +204,7 @@ def pool_ride(rideId):
             break
 
     query2 = {"table":"Rides","columns":["rideId"],"where":"1"}
-    ride_ids = requests.post(url='http://ec2-54-175-126-172.compute-1.amazonaws.com:8000/api/v1/db/read', json=query2)
+    ride_ids = requests.post(url='http://ec2-34-196-38-115.compute-1.amazonaws.com:80/api/v1/db/read', json=query2)
     ride_ids = ride_ids.json()['rideId']
     print("ride_ids:",ride_ids)
 
@@ -210,7 +220,7 @@ def pool_ride(rideId):
 
     else:
         insert_query = {"insert":[rideId,uname],"table":"joinedRides","columns":["rideID","uname"],"isDelete":"False"}
-        added = requests.post(url='http://ec2-54-175-126-172.compute-1.amazonaws.com:8000/api/v1/db/write', json=insert_query)
+        added = requests.post(url='http://ec2-34-196-38-115.compute-1.amazonaws.com:80/api/v1/db/write', json=insert_query)
         added = added.json()
         print(added)
         if(added['status'] == 200):
@@ -222,8 +232,10 @@ def pool_ride(rideId):
 #7th api
 @app.route('/api/v1/rides/<rideId>', methods=['DELETE'])
 def delete_ride(rideId):
+    global count
+    count+=1
     query = {"table":"rides","columns":["rideID"],"where":"1"}
-    ride_ids = requests.post('http://ec2-54-175-126-172.compute-1.amazonaws.com:8000/api/v1/db/read',json=query)
+    ride_ids = requests.post('http://ec2-34-196-38-115.compute-1.amazonaws.com:80/api/v1/db/read',json=query)
     valid = 0
     ride_ids=ride_ids.json()
     
@@ -246,7 +258,7 @@ def delete_ride(rideId):
         print("deleting . . ")
         send_data = {"insert":[rideId],"table":"rides","columns":["rideID"],"isDelete":"True"}
         try:
-            requests.post(url='http://ec2-54-175-126-172.compute-1.amazonaws.com:8000/api/v1/db/write', json=send_data)
+            requests.post(url='http://ec2-34-196-38-115.compute-1.amazonaws.com:80/api/v1/db/write', json=send_data)
             return Response(status=200)
         except:
             return Response(status=405)
@@ -259,14 +271,47 @@ def delete_ride(rideId):
 #clear database
 @app.route('/api/v1/db/clear',methods=['POST'])
 def clear_db():
+    global count
+    count+=1
     del_rides = {"insert":["username"],"table":"Rides","columns":["uname"],"isDelete":"False","isClear":"True"}
     del_areas = {"insert":["username"],"table":"Areas","columns":["uname"],"isDelete":"False","isClear":"True"}
     del_joined = {"insert":["username"],"table":"joinedRides","columns":["uname"],"isDelete":"False","isClear":"True"}
-    requests.post(url='http://ec2-54-175-126-172.compute-1.amazonaws.com:8000/api/v1/db/write',json=del_rides)
-    requests.post(url='http://ec2-54-175-126-172.compute-1.amazonaws.com:8000/api/v1/db/write',json=del_areas)
-    requests.post(url='http://ec2-54-175-126-172.compute-1.amazonaws.com:8000/api/v1/db/write',json=del_joined)
+    requests.post(url='http://ec2-34-196-38-115.compute-1.amazonaws.com:80/api/v1/db/write',json=del_rides)
+    requests.post(url='http://ec2-34-196-38-115.compute-1.amazonaws.com:80/api/v1/db/write',json=del_areas)
+    requests.post(url='http://ec2-34-196-38-115.compute-1.amazonaws.com:80/api/v1/db/write',json=del_joined)
 
     return Response(status=200)
+
+@app.route('/api/v1/_count', methods=['GET'])
+def get_count():
+    try:
+        global count
+        ls = [count]
+        return json.dumps(ls),200
+    except:
+        return Response(status=405)
+
+@app.route('/api/v1/_count', methods=['DELETE'])
+def set_count():
+    try:
+        global count
+        count = 0
+        return Response(status=200)
+    except:
+        return Response(status=405)
+
+@app.route('/api/v1/rides/count', methods=['GET'])
+def ride_count():
+    try:
+        query = {"table":"rides","columns":["rideID"],"where":"1"}
+        ride_ids = requests.post('http://ec2-34-196-38-115.compute-1.amazonaws.com:80/api/v1/db/read',json=query)
+        valid = 0
+        ride_ids=ride_ids.json()
+        ride_count = [ride_ids["count"]]
+        return json.dumps(ride_count),200
+    except:
+        return Response(status=405)
+    
 
 #8th api
 @app.route('/api/v1/db/write',methods=["POST"])
