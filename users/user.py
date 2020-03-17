@@ -8,17 +8,27 @@ pword_pat = re.compile('^[a-fA-F0-9]{40}$')
 
 app = Flask(__name__)
 
+count = 0
+
 @app.route("/")
 def hello():
-	return "<h1>Hello Anup</h1>"
+	return "<center><h1>Hello Anup !!</h1></center>"
+
+
+@app.route("/api/v1/users/check",methods=['GET'])
+def check():
+	return "<center><h1>Hello Anup ! This is Anup Speaking From User Container !!!</h1></center>"
 
 @app.route("/check",methods=['GET'])
 def checking_Communication():
 	print("From user Container !")
 	return "<h1>Hey , Rides container called me!</h1>"
+
 #1st api
 @app.route('/api/v1/users', methods=['PUT'])
 def add_user():
+    global count
+    count+=1
     print('adding user . .  ./n')
     try:
         data = request.get_json()
@@ -29,7 +39,7 @@ def add_user():
 
     query = {"table":"Users","columns":["uname"] ,"where":"1"}
 
-    uname_list = requests.post(url='http://ec2-54-175-126-172.compute-1.amazonaws.com:8080/api/v1/db/read',json=query)
+    uname_list = requests.post(url='http://ec2-54-175-126-172.compute-1.amazonaws.com:80/api/v1/db/read',json=query)
     valid=1
     
     print("9th api called . . .")
@@ -56,7 +66,7 @@ def add_user():
         else:
             #add
             sql_add = {"insert":[uname,pword],"table":"Users","columns":["uname","pwd"],"isDelete":"False","isClear":"False"}
-            requests.post(url='http://ec2-54-175-126-172.compute-1.amazonaws.com:8080/api/v1/db/write',json=sql_add)
+            requests.post(url='http://ec2-54-175-126-172.compute-1.amazonaws.com:80/api/v1/db/write',json=sql_add)
             return Response(status=201)
     else:
         #invalid uname
@@ -67,9 +77,11 @@ def add_user():
 #2nd api
 @app.route('/api/v1/users/<username>',methods=['DELETE'])
 def del_user(username):
+    global count
+    count+=1
     query = {"table":"Users","columns":["uname"] ,"where":"1"}
 
-    uname_list = requests.post(url='http://ec2-54-175-126-172.compute-1.amazonaws.com:8080/api/v1/db/read',json=query)
+    uname_list = requests.post(url='http://ec2-54-175-126-172.compute-1.amazonaws.com:80/api/v1/db/read',json=query)
     present=0
     
     print("9th api called . . .")
@@ -88,7 +100,7 @@ def del_user(username):
     if(present):
         print("present")
         sql_del = {"insert":[username],"table":"Users","columns":["uname"],"isDelete":"True","isClear":"False"}
-        requests.post(url='http://ec2-54-175-126-172.compute-1.amazonaws.com:8080/api/v1/db/write',json=sql_del)
+        requests.post(url='http://ec2-54-175-126-172.compute-1.amazonaws.com:80/api/v1/db/write',json=sql_del)
         return Response(status=200)
 
     else:
@@ -98,9 +110,11 @@ def del_user(username):
 #list all users
 @app.route('/api/v1/users', methods=["GET"])
 def list_users():
+    global count
+    count+=1
     query = {"table":"Users","columns":["uname"] ,"where":"1"}
 
-    uname_list = requests.post(url='http://ec2-54-175-126-172.compute-1.amazonaws.com:8080/api/v1/db/read',json=query)
+    uname_list = requests.post(url='http://ec2-54-175-126-172.compute-1.amazonaws.com:80/api/v1/db/read',json=query)
 
     unames = uname_list.json()['uname']
     
@@ -111,14 +125,33 @@ def list_users():
 #clear database
 @app.route('/api/v1/db/clear',methods=['POST'])
 def clear_db():
+    global count
+    count+=1
     sql_del = {"insert":["username"],"table":"Users","columns":["uname"],"isDelete":"False","isClear":"True"}
-    requests.post(url='http://ec2-54-175-126-172.compute-1.amazonaws.com:8080/api/v1/db/write',json=sql_del)
+    requests.post(url='http://ec2-54-175-126-172.compute-1.amazonaws.com:80/api/v1/db/write',json=sql_del)
 
     del_ride = ""
     #requests.post(url='http://127.0.0.1:6000/api/v1/db/clear',json=del_ride)    #assuming the other containers port = 6000
 
     return Response(status=200)
 
+
+@app.route('/api/v1/_count', methods=['GET'])
+def get_count():
+    try:
+        ls = [count]
+        return json.dumps(ls)
+    except:
+        return Response(status=500)
+
+@app.route('/api/v1/_count', methods=['DELETE'])
+def set_count():
+    try:
+        global count
+        count = 0
+        return "",200
+    except:
+        return Response(status=500)
 
 #8th api
 @app.route('/api/v1/db/write',methods=["POST"])
